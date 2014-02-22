@@ -37,6 +37,9 @@ public class MainActivity extends Activity implements SensorEventListener{
 	Sensor sX;
 	Sensor sY;
 	Sensor sZ;
+	float xRot;
+	float yRot;
+	float zRot;
 	SurfaceHolder ourHolder;
 	
 	@Override
@@ -46,6 +49,7 @@ public class MainActivity extends Activity implements SensorEventListener{
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, 
                                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         
 		ourSurfaceView = new MyBringBackSurface(this);	
 		setContentView(ourSurfaceView);
@@ -131,6 +135,23 @@ public class MainActivity extends Activity implements SensorEventListener{
 					float width=canvas.getWidth();
 					float height=canvas.getHeight();
 					
+					
+					Paint paint = new Paint();
+					paint.setStyle(Style.FILL);
+					paint.setColor(Color.RED);
+					Paint paint2 = new Paint();
+					paint.setStyle(Style.FILL);
+					paint.setColor(Color.BLUE);
+					paint.setTextSize((float) 60);
+					
+					//canvas.drawCircle(500,500, 100, paint2);
+					//canvas.drawCircle(500+event.values[0]*200,500+ event.values[0]*200, 100, paint);
+					
+					canvas.drawText("X Rotation: "+xRot*360/2/3.14, 100, 500, paint);
+					canvas.drawText("Y Rotation: "+yRot*360/2/3.14, 100, 700, paint);
+					canvas.drawText("Z Rotation: "+zRot*360/2/3.14, 100, 900, paint);
+			
+					
 					mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 					mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
 					
@@ -167,10 +188,9 @@ public class MainActivity extends Activity implements SensorEventListener{
 		//canvas.drawCircle(500,500, 100, paint2);
 		//canvas.drawCircle(500+event.values[0]*200,500+ event.values[0]*200, 100, paint);
 		
-		canvas.drawText(""+event.values[0]*360/2/3.1456, 300, 500, paint);
-		canvas.drawText(""+event.values[1]*360/2/3.1456, 300, 700, paint);
-		canvas.drawText(""+event.values[2]*360/2/3.1456, 300, 900, paint);
-		//ourHolder.unlockCanvasAndPost(canvas);
+		xRot=event.values[0];
+		yRot=event.values[1];
+		zRot=event.values[2];
 	}
 }
 
