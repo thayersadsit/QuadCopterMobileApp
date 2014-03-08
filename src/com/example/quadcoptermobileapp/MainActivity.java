@@ -1,47 +1,39 @@
 package com.example.quadcoptermobileapp;
 
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
-import android.graphics.Path;
-import android.graphics.Point;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-import android.view.View.OnTouchListener;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.View.OnClickListener;
 
 
-public class MainActivity extends Activity implements SensorEventListener{
 
-	MyBringBackSurface ourSurfaceView;
-	
-	Canvas canvas;
-	float hexHeight;
-	float hexWidth;
+
+public class MainActivity extends Activity implements SensorEventListener, OnClickListener{
+
+	public float xRot;
+	public float yRot;
+	public float zRot;
+	private MyBringBackSurface ourSurfaceView;
+	public Canvas canvas;
 	private SensorManager mSensorManager;
-	private Sensor mSensor;
-	Sensor sX;
-	Sensor sY;
-	Sensor sZ;
-	float xRot;
-	float yRot;
-	float zRot;
-	SurfaceHolder ourHolder;
-	
+	private Sensor accelerometer;
+	private Sensor magnetometer;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		// TODO Auto-generated method stub
@@ -50,32 +42,28 @@ public class MainActivity extends Activity implements SensorEventListener{
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, 
                                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        
-		ourSurfaceView = new MyBringBackSurface(this);	
+		ourSurfaceView = new MyBringBackSurface(this);
 		setContentView(ourSurfaceView);
-		SensorManager sm =(SensorManager) getSystemService(Context.SENSOR_SERVICE);
-		if(sm.getSensorList(Sensor.TYPE_ROTATION_VECTOR).size()!=0){
-			sX=sm.getSensorList(Sensor.TYPE_ROTATION_VECTOR).get(0);
-			//sY=sm.getSensorList(Sensor.TYPE_ROTATION_VECTOR).get(1);
-			//sZ=sm.getSensorList(Sensor.TYPE_ROTATION_VECTOR).get(2);
-			sm.registerListener(this,sX,SensorManager.SENSOR_DELAY_NORMAL);
-			//sm.registerListener(this,sY,SensorManager.SENSOR_DELAY_NORMAL);
-			//sm.registerListener(this,sZ,SensorManager.SENSOR_DELAY_NORMAL);
-			
-		}
+		 mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+	      accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+	    magnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 	}
+	
 
 	@Override
 	protected void onPause() {
 		// TODO Auto-generated method stub
 		super.onPause();
 		ourSurfaceView.pause();
+		 mSensorManager.unregisterListener(this);
 	}
 
 	@Override
 	protected void onResume() {
 		// TODO Auto-generated method stub
 		super.onResume();
+		mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
+		mSensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_UI);
 		ourSurfaceView.resume();
 	}
 
@@ -85,6 +73,7 @@ public class MainActivity extends Activity implements SensorEventListener{
 		
 		Thread ourThread = null;
 		boolean isRunning = false;
+		private SurfaceHolder ourHolder;
 		
 		public MyBringBackSurface(Context context) {
 			super(context);
@@ -150,11 +139,6 @@ public class MainActivity extends Activity implements SensorEventListener{
 					canvas.drawText("X Rotation: "+xRot*360/2/3.14, 100, 500, paint);
 					canvas.drawText("Y Rotation: "+yRot*360/2/3.14, 100, 700, paint);
 					canvas.drawText("Z Rotation: "+zRot*360/2/3.14, 100, 900, paint);
-			
-					
-					mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-					mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
-					
 					
 					ourHolder.unlockCanvasAndPost(canvas);	
 					
@@ -166,6 +150,9 @@ public class MainActivity extends Activity implements SensorEventListener{
 		// TODO Auto-generated method stub
 		
 	}
+	float[] mGravity = null;
+	 float[] mGeomagnetic = null;
+	
 
 	@Override
 	public void onSensorChanged(SensorEvent event) {
@@ -176,21 +163,35 @@ public class MainActivity extends Activity implements SensorEventListener{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		Paint paint = new Paint();
-		paint.setStyle(Style.FILL);
-		paint.setColor(Color.RED);
-		Paint paint2 = new Paint();
-		paint.setStyle(Style.FILL);
-		paint.setColor(Color.BLUE);
-		paint.setTextSize((float) 30);
+	
+		if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
+		      mGravity = event.values;
+		   
+			if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
+		      mGeomagnetic = event.values;
+		    if (mGravity != null && mGeomagnetic != null) {
+		      float R[] = new float[9];
+		      float I[] = new float[9];
+		      boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
+		      if (success) {
+		        float orientation[] = new float[3];
+		        SensorManager.getOrientation(R, orientation);
+		       zRot = orientation[0]; // orientation contains: azimut, pitch and roll
+		       xRot = orientation[1];
+		       yRot= orientation[2];
+		      
+		      }
+		    }
 		
-		//canvas = ourHolder.lockCanvas();
-		//canvas.drawCircle(500,500, 100, paint2);
-		//canvas.drawCircle(500+event.values[0]*200,500+ event.values[0]*200, 100, paint);
-		
-		xRot=event.values[0];
-		yRot=event.values[1];
-		zRot=event.values[2];
 	}
+
+
+	@Override
+	public void onClick(View arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
 }
 
